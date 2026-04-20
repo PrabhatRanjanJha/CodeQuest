@@ -67,14 +67,31 @@ async function runOnPiston({ language, code }) {
 }
 
 export const runCode = async ({ language, code }) => {
-  try {
-    return await runOnBackend({ language, code });
-  } catch (localError) {
+  // In production without backend runner, skip directly to Piston
+  const isLocalBackend = BACKEND_RUN_URL.includes("localhost");
+  
+  if (isLocalBackend) {
     try {
-      return await runOnPiston({ language, code });
-    } catch (pistonError) {
-      console.error("Code runner failed (local + fallback):", { localError, pistonError });
-      throw localError;
+      return await runOnBackend({ language, code });
+    } catch (localError) {
+      try {
+        return await runOnPiston({ language, code });
+      } catch (pistonError) {
+        console.error("Code runner failed (local + fallback):", { localError, pistonError });
+        throw pistonError;
+      }
+    }
+  } else {
+    // Backend URL is configured, try it first
+    try {
+      return await runOnBackend({ language, code });
+    } catch (backendError) {
+      try {
+        return await runOnPiston({ language, code });
+      } catch (pistonError) {
+        console.error("Code runner failed (backend + fallback):", { backendError, pistonError });
+        throw backendError;
+      }
     }
   }
 };
