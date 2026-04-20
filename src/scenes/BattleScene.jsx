@@ -134,7 +134,8 @@ export default function BattleScene() {
 
         const execution = await runCode({
           language: selectedLanguage,
-          code: fullCode
+          code: fullCode,
+          expected: testCase.expected
         })
 
         const stdout = normalizeOutput(execution.stdout)
